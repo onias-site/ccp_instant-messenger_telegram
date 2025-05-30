@@ -13,11 +13,11 @@ import com.ccp.especifications.http.CcpHttpHandler;
 import com.ccp.especifications.http.CcpHttpRequester;
 import com.ccp.especifications.http.CcpHttpResponseType;
 import com.ccp.especifications.instant.messenger.CcpInstantMessenger;
-import com.ccp.exceptions.db.instant.messenger.CcpInstantMessengerChatErrorCount;
-import com.ccp.exceptions.instant.messenger.CcpInstantMessageThisBotWasBlockedByThisUser;
-import com.ccp.exceptions.instant.messenger.CcpTooManyRequests;
+import com.ccp.exceptions.db.instant.messenger.CcpErrorInstantMessengerChatErrorCount;
+import com.ccp.exceptions.instant.messenger.CcpErrorInstantMessageThisBotWasBlockedByThisUser;
+import com.ccp.exceptions.instant.messenger.CcpErrorInstantMessageTooManyRequests;
 import com.ccp.http.CcpHttpMethods;
-import com.ccp.process.CcpThrowException;
+import com.ccp.process.CcpFunctionThrowException;
 
 class TelegramInstantMessenger implements CcpInstantMessenger {
 	
@@ -31,17 +31,17 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 
 		CcpJsonRepresentation response = ccpHttpHandler.executeHttpSimplifiedGet("getMembersCount", url, CcpHttpResponseType.singleRecord);
 		if(response.getAsBoolean("ok") == false) {
-			throw new CcpInstantMessengerChatErrorCount(chatId);
+			throw new CcpErrorInstantMessengerChatErrorCount(chatId);
 		}
 		Long result = response.getAsLongNumber("result");
 		return result;
 	}
 	CcpInstantMessenger throwThisBotWasBlockedByThisUser(String token) {
-		throw new CcpInstantMessageThisBotWasBlockedByThisUser(token);
+		throw new CcpErrorInstantMessageThisBotWasBlockedByThisUser(token);
 	}
 	
 	CcpInstantMessenger throwTooManyRequests() {
-		throw new CcpTooManyRequests();
+		throw new CcpErrorInstantMessageTooManyRequests();
 	}
 	public CcpJsonRepresentation sendMessage(CcpJsonRepresentation json) {
 		String token = this.getToken(json);
@@ -91,8 +91,8 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		CcpHttpMethods method = CcpHttpMethods.valueOf( json.getAsString("method"));
 		
 		CcpJsonRepresentation handlers = CcpOtherConstants.EMPTY_JSON
-				.addJsonTransformer("403", new CcpThrowException(new CcpInstantMessageThisBotWasBlockedByThisUser(token)))
-				.addJsonTransformer("429", new CcpThrowException(new CcpTooManyRequests()))
+				.addJsonTransformer("403", new CcpFunctionThrowException(new CcpErrorInstantMessageThisBotWasBlockedByThisUser(token)))
+				.addJsonTransformer("429", new CcpFunctionThrowException(new CcpErrorInstantMessageTooManyRequests()))
 				.addJsonTransformer("200", CcpOtherConstants.DO_NOTHING)
 				;
 		

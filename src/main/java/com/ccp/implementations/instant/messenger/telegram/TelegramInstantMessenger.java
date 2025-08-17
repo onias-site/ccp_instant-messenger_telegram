@@ -11,32 +11,32 @@ import com.ccp.decorators.CcpStringDecorator;
 import com.ccp.decorators.CcpJsonRepresentation.CcpJsonFieldName;
 import com.ccp.dependency.injection.CcpDependencyInjection;
 import com.ccp.especifications.http.CcpHttpHandler;
+import com.ccp.especifications.http.CcpHttpMethods;
 import com.ccp.especifications.http.CcpHttpRequester;
 import com.ccp.especifications.http.CcpHttpResponseType;
+import com.ccp.especifications.instant.messenger.CcpErrorInstantMessageThisBotWasBlockedByThisUser;
+import com.ccp.especifications.instant.messenger.CcpErrorInstantMessageTooManyRequests;
+import com.ccp.especifications.instant.messenger.CcpErrorInstantMessengerChatErrorCount;
 import com.ccp.especifications.instant.messenger.CcpInstantMessenger;
-import com.ccp.exceptions.db.instant.messenger.CcpErrorInstantMessengerChatErrorCount;
-import com.ccp.exceptions.instant.messenger.CcpErrorInstantMessageThisBotWasBlockedByThisUser;
-import com.ccp.exceptions.instant.messenger.CcpErrorInstantMessageTooManyRequests;
-import com.ccp.http.CcpHttpMethods;
 import com.ccp.process.CcpFunctionThrowException;
-enum TelegramInstantMessengerConstants  implements CcpJsonFieldName{
-	chatId, ok, result, recipient, message, method, replyTo, reply_to_message_id, parse_mode, chat_id, text, url, message_id, token
-}
 class TelegramInstantMessenger implements CcpInstantMessenger {
+	enum JsonFieldNames implements CcpJsonFieldName{
+		chatId, ok, result, recipient, message, method, replyTo, reply_to_message_id, parse_mode, chat_id, text, url, message_id, token
+	}
 	
 	public Long getMembersCount(CcpJsonRepresentation parameters) {
 		CcpHttpRequester ccpHttp = CcpDependencyInjection.getDependency(CcpHttpRequester.class);
 
-		Long chatId = parameters.getAsLongNumber(TelegramInstantMessengerConstants.chatId);
+		Long chatId = parameters.getAsLongNumber(JsonFieldNames.chatId);
 		String url = this.getCompleteUrl(parameters);
 		ccpHttp.executeHttpRequest(url + "/getChatMemberCount?chat_id=" + chatId, CcpHttpMethods.GET, CcpOtherConstants.EMPTY_JSON, "", 200);
 		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(200);
 
 		CcpJsonRepresentation response = ccpHttpHandler.executeHttpSimplifiedGet("getMembersCount", url, CcpHttpResponseType.singleRecord);
-		if(response.getAsBoolean(TelegramInstantMessengerConstants.ok) == false) {
+		if(response.getAsBoolean(JsonFieldNames.ok) == false) {
 			throw new CcpErrorInstantMessengerChatErrorCount(chatId);
 		}
-		Long result = response.getAsLongNumber(TelegramInstantMessengerConstants.result);
+		Long result = response.getAsLongNumber(JsonFieldNames.result);
 		return result;
 	}
 	CcpInstantMessenger throwThisBotWasBlockedByThisUser(String token) {
@@ -51,7 +51,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		
 //		this.throwTooManyRequests();
 //		this.throwThisBotWasBlockedByThisUser(token);
-		Long chatId = json.getAsLongNumber(TelegramInstantMessengerConstants.recipient);
+		Long chatId = json.getAsLongNumber(JsonFieldNames.recipient);
 		Set<String> fieldSet = json.fieldSet();
 		for (String fieldName : fieldSet) {
 			Object value = json.getDynamicVersion().get(fieldName);
@@ -59,7 +59,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				json = json.getDynamicVersion().put(fieldName, value.toString());
 			}
 		}
-		String message = json.getAsString(TelegramInstantMessengerConstants.message)
+		String message = json.getAsString(JsonFieldNames.message)
 				.replace("\u003cBR\u003e", "\n")
 				.replace("\u003cbr\u003e", "\n")
 				.replace("<BR/>", "\n")
@@ -73,7 +73,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				.replace("<", "(")
 				.replace(">", ")")
 				;
-		Long replyTo =  json.getOrDefault(TelegramInstantMessengerConstants.replyTo, 0L);
+		Long replyTo =  json.getOrDefault(JsonFieldNames.replyTo, 0L);
 
 		if(message.trim().isEmpty()) {
 			return CcpOtherConstants.EMPTY_JSON;
@@ -91,7 +91,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		}
 		String botUrl = this.getCompleteUrl(json);
 		String url = botUrl + "/sendMessage";
-		CcpHttpMethods method = CcpHttpMethods.valueOf( json.getAsString(TelegramInstantMessengerConstants.method));
+		CcpHttpMethods method = CcpHttpMethods.valueOf( json.getAsString(JsonFieldNames.method));
 		
 		CcpJsonRepresentation handlers = CcpOtherConstants.EMPTY_JSON
 				.addJsonTransformer(403, new CcpFunctionThrowException(new CcpErrorInstantMessageThisBotWasBlockedByThisUser(token)))
@@ -103,16 +103,16 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		
 		for (String text : texts) {
 			CcpJsonRepresentation body = CcpOtherConstants.EMPTY_JSON
-					.put(TelegramInstantMessengerConstants.reply_to_message_id, replyTo)
-					.put(TelegramInstantMessengerConstants.parse_mode, "html")
-					.put(TelegramInstantMessengerConstants.chat_id, chatId)
-					.put(TelegramInstantMessengerConstants.text, text);
+					.put(JsonFieldNames.reply_to_message_id, replyTo)
+					.put(JsonFieldNames.parse_mode, "html")
+					.put(JsonFieldNames.chat_id, chatId)
+					.put(JsonFieldNames.text, text);
 			
 			CcpJsonRepresentation response = ccpHttpHandler.executeHttpRequest("sendInstantMessage", url, method, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
 			
-			CcpJsonRepresentation result = response.getInnerJson(TelegramInstantMessengerConstants.result);
+			CcpJsonRepresentation result = response.getInnerJson(JsonFieldNames.result);
 			
-			replyTo = result.getAsLongNumber(TelegramInstantMessengerConstants.message_id);
+			replyTo = result.getAsLongNumber(JsonFieldNames.message_id);
 		}
 		
 		return CcpOtherConstants.EMPTY_JSON
@@ -125,7 +125,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		CcpJsonRepresentation properties = new CcpStringDecorator("application_properties").propertiesFrom().environmentVariablesOrClassLoaderOrFile();	
 		String tokenValue = this.getToken(parameters);
 		
-		String urlKey = parameters.getAsString(TelegramInstantMessengerConstants.url);
+		String urlKey = parameters.getAsString(JsonFieldNames.url);
 		String urlValue = properties.getDynamicVersion().getAsString(urlKey);
 		
 		return urlValue + tokenValue;
@@ -133,7 +133,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 
 	public String getToken(CcpJsonRepresentation parameters) {
 		CcpJsonRepresentation properties = new CcpStringDecorator("application_properties").propertiesFrom().environmentVariablesOrClassLoaderOrFile();	
-		String tokenKey = parameters.getAsString(TelegramInstantMessengerConstants.token);
+		String tokenKey = parameters.getAsString(JsonFieldNames.token);
 		String tokenValue = properties.getDynamicVersion().getAsString(tokenKey);
 		if(tokenValue.trim().isEmpty()) {
 			return tokenKey;

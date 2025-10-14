@@ -33,7 +33,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(200);
 
 		CcpJsonRepresentation response = ccpHttpHandler.executeHttpSimplifiedGet("getMembersCount", url, CcpHttpResponseType.singleRecord);
-		if(response.getAsBoolean(JsonFieldNames.ok) == false) {
+		if(false == response.getAsBoolean(JsonFieldNames.ok)) {
 			throw new CcpErrorInstantMessengerChatErrorCount(chatId);
 		}
 		Long result = response.getAsLongNumber(JsonFieldNames.result);

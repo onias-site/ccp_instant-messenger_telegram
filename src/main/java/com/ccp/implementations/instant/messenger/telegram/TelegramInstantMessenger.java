@@ -105,7 +105,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 			CcpJsonRepresentation body = CcpOtherConstants.EMPTY_JSON
 					.put(JsonFieldNames.reply_to_message_id, replyTo)
 					.put(JsonFieldNames.parse_mode, "html")
-					.put(JsonFieldNames.chat_id, chatId)
+					.put(JsonFieldNames.chat_id, "" + chatId)
 					.put(JsonFieldNames.text, text);
 			
 			CcpJsonRepresentation response = ccpHttpHandler.executeHttpRequest("sendInstantMessage", url, method, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);

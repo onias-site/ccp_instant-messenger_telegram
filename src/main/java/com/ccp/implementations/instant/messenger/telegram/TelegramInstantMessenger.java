@@ -9,6 +9,7 @@ import com.ccp.constantes.CcpOtherConstants;
 import com.ccp.decorators.CcpJsonRepresentation;
 import com.ccp.decorators.CcpStringDecorator;
 import com.ccp.decorators.CcpJsonRepresentation.CcpJsonFieldName;
+import com.ccp.decorators.CcpJsonRepresentation;
 import com.ccp.dependency.injection.CcpDependencyInjection;
 import com.ccp.especifications.http.CcpHttpHandler;
 import com.ccp.especifications.http.CcpHttpMethods;
@@ -145,7 +146,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 	
 	public String getFileName(CcpJsonRepresentation parameters) {
 		
-//		CcpMapDecorator messageData = parameters.getInternalMap("messageData");
+//		CcpJsonRepresentation messageData = parameters.getInternalMap("messageData");
 //		String botToken = parameters.getAsString("botToken");
 		
 		return "";
@@ -153,7 +154,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 
 	
 	public String extractTextFromMessage(CcpJsonRepresentation parameters) {
-//		CcpMapDecorator messageData = parameters.getInternalMap("messageData");
+//		CcpJsonRepresentation messageData = parameters.getInternalMap("messageData");
 //		String botToken = parameters.getAsString("botToken");
 
 		return "";

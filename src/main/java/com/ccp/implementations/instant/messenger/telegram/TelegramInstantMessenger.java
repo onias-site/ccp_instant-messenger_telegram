@@ -73,7 +73,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				.replace("<", "(")
 				.replace(">", ")")
 				;
-		Long replyTo =  json.getOrDefault(JsonFieldNames.replyTo, 0L);
+		Long replyTo =  json.getOrDefault(JsonFieldNames.replyTo, () -> 0L);
 
 		if(message.trim().isEmpty()) {
 			return CcpOtherConstants.EMPTY_JSON;

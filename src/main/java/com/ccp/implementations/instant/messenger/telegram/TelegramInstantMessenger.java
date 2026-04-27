@@ -61,19 +61,9 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		}
 		String msg = json.getAsString(JsonFieldNames.message);
 		String message = msg
-				.replace("\u003cBR\u003e", "\n")
-				.replace("\u003cbr\u003e", "\n")
-				.replace("<BR/>", "\n")
-				.replace("<br/>", "\n")
-				.replace("<BR>", "\n")
-				.replace("<br>", "\n")
-				.replace("u003c", "(")
-				.replace("u003e", ")")
-				.replace("<p>", "\n")
-				.replace("</p>", " ")
-				.replace("<", "(")
-				.replace(">", ")")
-				.replace("\\(BR\\)", "\n")
+				.replace("\"]", "\n")
+				.replace("[\"", "\n")
+				.replace("\",\"", "\n")
 				;
 		Long replyTo =  json.getOrDefault(JsonFieldNames.replyTo, () -> 0L);
 

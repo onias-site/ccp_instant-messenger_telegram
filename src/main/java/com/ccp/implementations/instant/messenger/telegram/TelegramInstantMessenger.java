@@ -1,6 +1,7 @@
 package com.ccp.implementations.instant.messenger.telegram;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -10,6 +11,9 @@ import com.ccp.decorators.CcpJsonRepresentation;
 import com.ccp.decorators.CcpStringDecorator;
 import com.ccp.decorators.CcpJsonRepresentation.CcpJsonFieldName;
 import com.ccp.dependency.injection.CcpDependencyInjection;
+import com.ccp.especifications.http.CcpHttpBodyBinary;
+import com.ccp.especifications.http.CcpHttpBodyText;
+import com.ccp.especifications.http.CcpHttpContentType;
 import com.ccp.especifications.http.CcpHttpHandler;
 import com.ccp.especifications.http.CcpHttpMethods;
 import com.ccp.especifications.http.CcpHttpRequester;
@@ -30,9 +34,9 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		Long chatId = parameters.getAsLongNumber(JsonFieldNames.chatId);
 		String url = this.getCompleteUrl(parameters);
 		ccpHttp.executeHttpRequest(url + "/getChatMemberCount?chat_id=" + chatId, CcpHttpMethods.GET, CcpOtherConstants.EMPTY_JSON, "", 200);
-		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(200);
+		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(200, url);
 
-		CcpJsonRepresentation response = ccpHttpHandler.executeHttpSimplifiedGet("getMembersCount", url, CcpHttpResponseType.singleRecord);
+		CcpJsonRepresentation response = ccpHttpHandler.executeHttpSimplifiedGet("getMembersCount", CcpHttpResponseType.singleRecord);
 		if(false == response.getAsBoolean(JsonFieldNames.ok)) {
 			throw new CcpErrorInstantMessengerChatErrorCount(chatId);
 		}
@@ -76,7 +80,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				.addJsonTransformer(200, CcpOtherConstants.DO_NOTHING)
 				;
 		
-		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(handlers);
+		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(handlers, url);
 		
 		for (String text : texts) {
 			CcpJsonRepresentation body = CcpOtherConstants.EMPTY_JSON
@@ -85,7 +89,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 					.put(JsonFieldNames.chat_id, "" + chatId)
 					.put(JsonFieldNames.text, text);
 			
-			CcpJsonRepresentation response = ccpHttpHandler.executeHttpRequest("sendInstantMessage", url, method, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
+			CcpJsonRepresentation response = ccpHttpHandler.executeHttpRequest("sendInstantMessage", method, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
 			
 			CcpJsonRepresentation result = response.getInnerJson(JsonFieldNames.result);
 			
@@ -142,7 +146,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				.addJsonTransformer(200, CcpOtherConstants.DO_NOTHING)
 				;
 		
-		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(handlers);
+		CcpHttpHandler ccpHttpHandler = new CcpHttpHandler(handlers, url);
 		
 		for (String text : texts) {
 			CcpJsonRepresentation body = CcpOtherConstants.EMPTY_JSON
@@ -151,7 +155,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 					.put(JsonFieldNames.chat_id, "" + chatId)
 					.put(JsonFieldNames.text, text);
 			
-			CcpJsonRepresentation response = ccpHttpHandler.executeHttpRequest("sendInstantMessage", url, method, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
+			CcpJsonRepresentation response = ccpHttpHandler.executeHttpRequest("sendInstantMessage", method, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
 			
 			CcpJsonRepresentation result = response.getInnerJson(JsonFieldNames.result);
 			
@@ -199,6 +203,38 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 //		String botToken = parameters.getAsString("botToken");
 
 		return "";
+	}
+
+	public CcpJsonRepresentation sendFile(String botToken, Long chatId, Long replyTo, String fileName, String caption, Byte[] fileContent) {
+
+		
+		CcpHttpMethods method = CcpHttpMethods.POST;
+		String resource = "/sendDocument";
+		CcpJsonRepresentation properties = new CcpStringDecorator("application_properties").propertiesFrom().environmentVariablesOrClassLoaderOrFile();	
+		String botUrl = properties.getAsString(JsonFieldNames.urlInstantMessengerKey);
+		String url = botUrl + botToken + resource;
+		
+		CcpJsonRepresentation handlers = CcpOtherConstants.EMPTY_JSON
+				.addJsonTransformer(403, new CcpFunctionThrowException(new CcpErrorInstantMessageThisBotWasBlockedByThisUser(botToken)))
+				.addJsonTransformer(429, new CcpFunctionThrowException(new CcpErrorInstantMessageTooManyRequests()))
+				.addJsonTransformer(200, CcpOtherConstants.DO_NOTHING)
+				;
+		
+		CcpHttpHandler httpHandler = new CcpHttpHandler(handlers, url);
+
+		CcpHttpBodyBinary binary = new CcpHttpBodyBinary(CcpHttpContentType.TEXT_HTML, "document", fileName, fileContent);
+		List<CcpHttpBodyBinary> binaries = Arrays.asList(binary);
+		CcpHttpBodyText text = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, "chat_id", "" + chatId);
+		CcpHttpBodyText _caption = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, "caption", caption);
+		List<CcpHttpBodyText> texts = Arrays.asList(text, _caption);
+		
+		CcpJsonRepresentation result = httpHandler.executeMultiPartHttpRequest("", method, CcpOtherConstants.EMPTY_JSON, texts, binaries, CcpHttpResponseType.singleRecord);
+		
+		Double messageId = result.getValueFromPath(0d, JsonFieldNames.result, JsonFieldNames.message_id);
+		
+		CcpJsonRepresentation put = CcpOtherConstants.EMPTY_JSON.put(JsonFieldNames.replyTo, messageId);
+		
+		return put;
 	}
 
 

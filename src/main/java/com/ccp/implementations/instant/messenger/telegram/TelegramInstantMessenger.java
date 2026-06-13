@@ -18,6 +18,12 @@ import com.ccp.especifications.http.CcpHttpTooManyRequests;
 import com.ccp.especifications.instant.messenger.CcpErrorInstantMessageThisBotWasBlockedByThisUser;
 import com.ccp.especifications.instant.messenger.CcpInstantMessenger;
 import com.ccp.process.CcpFunctionThrowException;
+/**
+ * Implementação de {@code CcpInstantMessenger} para o Telegram. Envia mensagens de texto
+ * (suportando paginação automática a cada 4096 caracteres) e arquivos via multipart.
+ * Trata erros HTTP 403 (bot bloqueado) e 429 (muitas requisições) lançando as exceções
+ * correspondentes.
+ */
 class TelegramInstantMessenger implements CcpInstantMessenger {
 	enum JsonFieldNames implements CcpJsonFieldName{
 		chatId, ok, result, recipient, message, method, replyTo, reply_to_message_id, parse_mode, chat_id, text, url, message_id, token, urlInstantMessengerKey, fileName, caption

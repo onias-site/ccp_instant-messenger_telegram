@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.ccp.constantes.CcpOtherConstants;
+import com.ccp.constants.CcpOtherConstants;
 import com.ccp.decorators.CcpJsonRepresentation;
 import com.ccp.decorators.CcpJsonRepresentation.CcpJsonFieldName;
 import com.ccp.decorators.CcpStringDecorator;
@@ -14,6 +14,7 @@ import com.ccp.especifications.http.CcpHttpContentType;
 import com.ccp.especifications.http.CcpHttpHandler;
 import com.ccp.especifications.http.CcpHttpMethods;
 import com.ccp.especifications.http.CcpHttpResponseType;
+
 import com.ccp.especifications.http.CcpHttpTooManyRequests;
 import com.ccp.especifications.instant.messenger.CcpErrorInstantMessageThisBotWasBlockedByThisUser;
 import com.ccp.especifications.instant.messenger.CcpInstantMessenger;
@@ -120,21 +121,18 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 	}
 
 	private CcpHttpHandler getHttpHandler(CcpJsonFieldName botType, String botToken, String resource) {
-		CcpJsonRepresentation properties = new CcpStringDecorator("application_properties").propertiesFrom().environmentVariablesOrClassLoaderOrFile();	
+		CcpJsonRepresentation properties = new CcpStringDecorator("application_properties").propertiesFrom().environmentVariablesOrClassLoaderOrFile();
 		String botUrl = properties.getAsString(JsonFieldNames.urlInstantMessengerKey);
 		String url = botUrl + botToken + resource;
-		
+
 		CcpJsonRepresentation handlers = CcpOtherConstants.EMPTY_JSON
 				.addJsonTransformer(403, new CcpFunctionThrowException(new CcpErrorInstantMessageThisBotWasBlockedByThisUser(botType.name())))
 				.addJsonTransformer(429, new CcpFunctionThrowException(new CcpHttpTooManyRequests()))
 				.addJsonTransformer(200, CcpOtherConstants.DO_NOTHING)
 				;
-		
+
 		CcpHttpHandler httpHandler = new CcpHttpHandler(handlers, url);
 		return httpHandler;
 	}
 
-
-
-	
 }

@@ -83,8 +83,11 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 			CcpJsonRepresentation response = httpHandler.executeHttpRequest("sendInstantMessage", CcpHttpMethods.POST, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
 			
 			CcpJsonRepresentation result = response.getInnerJson(JsonFieldNames.result);
-			
-			replyTo = result.getAsLongNumber(JsonFieldNames.message_id);
+			CcpStringDecorator sd = result.getAsStringDecorator(JsonFieldNames.message_id);
+			boolean longNumber = sd.isLongNumber();
+			if(longNumber) {
+				replyTo = result.getAsLongNumber(JsonFieldNames.message_id);
+			}
 		}
 		
 		return CcpOtherConstants.EMPTY_JSON
@@ -127,6 +130,8 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 
 		CcpJsonRepresentation handlers = CcpOtherConstants.EMPTY_JSON
 				.addJsonTransformer(403, new CcpFunctionThrowException(new CcpErrorInstantMessageThisBotWasBlockedByThisUser(botType.name())))
+				.addJsonTransformer(404, new CcpFunctionThrowException(new RuntimeException("The bot '" + botToken + "' was not found")))
+				.addJsonTransformer(401, new CcpFunctionThrowException(new RuntimeException("The bot '" + botToken + "' is inactive")))
 				.addJsonTransformer(429, new CcpFunctionThrowException(new CcpHttpTooManyRequests()))
 				.addJsonTransformer(200, CcpOtherConstants.DO_NOTHING)
 				;

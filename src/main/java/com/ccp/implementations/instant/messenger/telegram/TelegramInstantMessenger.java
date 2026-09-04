@@ -130,13 +130,15 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				CcpJsonRepresentation put8 = put7
 				.put(JsonFieldNames.caption, caption);
 				CcpStringDecorator ccpStringDecorator = new CcpStringDecorator(fileContent);
-				CcpJsonRepresentation put9 = put8
+				CcpJsonRepresentation put = put8
 				.put(JsonFieldNames.message, ccpStringDecorator.content);
-
-				CcpJsonRepresentation put = put9
-				.put(JsonFieldNames.replyTo, messageId)
+				boolean hasReplyTo = messageId > 0;
 				
-				;
+				if(hasReplyTo) {
+					put = put.put(JsonFieldNames.replyTo, messageId);
+					
+				}
+				
 		
 		return put;
 	}

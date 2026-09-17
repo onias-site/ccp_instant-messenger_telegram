@@ -19,6 +19,7 @@ import com.ccp.especifications.http.CcpHttpTooManyRequests;
 import com.ccp.especifications.instant.messenger.CcpErrorInstantMessageThisBotWasBlockedByThisUser;
 import com.ccp.especifications.instant.messenger.CcpInstantMessenger;
 import com.ccp.process.CcpFunctionThrowException;
+import com.ccp.json.fields.validation.CcpJsonCommonsFields;
 import com.ccp.decorators.CcpPropertiesDecorator;/**
  * Implementação de {@code CcpInstantMessenger} para o Telegram. Envia mensagens de texto
  * (suportando paginação automática a cada 4096 caracteres) e arquivos via multipart.
@@ -28,7 +29,7 @@ import com.ccp.decorators.CcpPropertiesDecorator;/**
 
 class TelegramInstantMessenger implements CcpInstantMessenger {
 	enum JsonFieldNames implements CcpJsonFieldName{
-		chatId, ok, result, recipient, message, method, replyTo, reply_to_message_id, parse_mode, chat_id, text, url, message_id, token, urlInstantMessengerKey, fileName, caption
+		chatId, recipient, message, method, reply_to_message_id, parse_mode, chat_id, url, urlInstantMessengerKey, fileName, caption
 	}
 	
 //	public Long getMembersCount(CcpJsonRepresentation parameters) {
@@ -89,19 +90,19 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 					CcpJsonRepresentation put4 = put3
 					.put(JsonFieldNames.chat_id, valorMais);
 					CcpJsonRepresentation body = put4
-					.put(JsonFieldNames.text, text);
+					.put(CcpJsonCommonsFields.text, text);
 			
 			CcpJsonRepresentation response = httpHandler.executeHttpRequest("sendInstantMessage", CcpHttpMethods.POST, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
 			
-			CcpJsonRepresentation result = response.getInnerJson(JsonFieldNames.result);
-			CcpStringDecorator sd = result.getAsStringDecorator(JsonFieldNames.message_id);
+			CcpJsonRepresentation result = response.getInnerJson(CcpJsonCommonsFields.result);
+			CcpStringDecorator sd = result.getAsStringDecorator(CcpJsonCommonsFields.message_id);
 			boolean longNumber = sd.isLongNumber();
 			if(longNumber) {
-				replyTo = result.getAsLongNumber(JsonFieldNames.message_id);
+				replyTo = result.getAsLongNumber(CcpJsonCommonsFields.message_id);
 			}
 		}
 		CcpJsonRepresentation put5 = CcpOtherConstants.EMPTY_JSON
-				.put(JsonFieldNames.replyTo, replyTo);
+				.put(CcpJsonCommonsFields.replyTo, replyTo);
 				CcpJsonRepresentation put6 = put5
 				.put(JsonFieldNames.message, message);
 
@@ -124,7 +125,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		CcpHttpMethods method = CcpHttpMethods.POST;
 		CcpJsonRepresentation result = httpHandler.executeMultiPartHttpRequest("", method, CcpOtherConstants.EMPTY_JSON, texts, binaries, CcpHttpResponseType.singleRecord);
 		
-		Double messageId = result.getValueFromPath(0d, JsonFieldNames.result, JsonFieldNames.message_id);
+		Double messageId = result.getValueFromPath(0d, CcpJsonCommonsFields.result, CcpJsonCommonsFields.message_id);
 		CcpJsonRepresentation put7 = CcpOtherConstants.EMPTY_JSON
 				.put(JsonFieldNames.fileName, fileName);
 				CcpJsonRepresentation put8 = put7
@@ -135,7 +136,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				boolean hasReplyTo = messageId > 0;
 				
 				if(hasReplyTo) {
-					put = put.put(JsonFieldNames.replyTo, messageId);
+					put = put.put(CcpJsonCommonsFields.replyTo, messageId);
 					
 				}
 				

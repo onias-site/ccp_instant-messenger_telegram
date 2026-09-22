@@ -12,5 +12,5 @@ public class CcpTelegramInstantMessenger implements CcpInstanceProvider<CcpInsta
 		TelegramInstantMessenger telegramInstantMessenger = new TelegramInstantMessenger();
 		return telegramInstantMessenger;
 	}
-
+ 
 }

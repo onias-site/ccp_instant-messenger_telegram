@@ -29,7 +29,7 @@ import com.ccp.decorators.CcpPropertiesDecorator;/**
 
 class TelegramInstantMessenger implements CcpInstantMessenger {
 	enum JsonFieldNames implements CcpJsonFieldName{
-		chatId, recipient, message, method, reply_to_message_id, parse_mode, chat_id, url, urlInstantMessengerKey, fileName, caption
+		chatId, recipient, message, method, reply_to_message_id, chat_id, url, urlInstantMessengerKey, fileName, caption
 	}
 	
 //	public Long getMembersCount(CcpJsonRepresentation parameters) {
@@ -82,12 +82,13 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		CcpHttpHandler httpHandler = this.getHttpHandler(botType, botToken, "/sendMessage");
 		
 		for (String text : texts) {
+			// plain text, without parse_mode: no message sent by the system uses html formatting, and with
+			// parse_mode html Telegram refused (400, can't parse entities) any text with '<' or '&', such as
+			// the "aprovar <justificativa>" options of the support bot or a stack trace with "<init>"
 			CcpJsonRepresentation bodyWithReplyTo = CcpOtherConstants.EMPTY_JSON
 					.put(JsonFieldNames.reply_to_message_id, replyTo);
-					CcpJsonRepresentation bodyWithParseMode = bodyWithReplyTo
-					.put(JsonFieldNames.parse_mode, "html");
 					String chatIdAsText = "" + chatId;
-					CcpJsonRepresentation bodyWithChatId = bodyWithParseMode
+					CcpJsonRepresentation bodyWithChatId = bodyWithReplyTo
 					.put(JsonFieldNames.chat_id, chatIdAsText);
 					CcpJsonRepresentation body = bodyWithChatId
 					.put(CcpJsonCommonsFields.text, text);

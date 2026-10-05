@@ -8,6 +8,10 @@ import com.ccp.especifications.instant.messenger.CcpInstantMessenger;;
  */
 public class CcpTelegramInstantMessenger implements CcpInstanceProvider<CcpInstantMessenger> {
 
+	/**
+	 * Builds the Telegram implementation of {@code CcpInstantMessenger}.
+	 * @return a new {@code TelegramInstantMessenger}
+	 */
 	public CcpInstantMessenger getInstance() {
 		TelegramInstantMessenger telegramInstantMessenger = new TelegramInstantMessenger();
 		return telegramInstantMessenger;

@@ -20,16 +20,37 @@ import com.ccp.especifications.instant.messenger.CcpErrorInstantMessageThisBotWa
 import com.ccp.especifications.instant.messenger.CcpInstantMessenger;
 import com.ccp.process.CcpFunctionThrowException;
 import com.ccp.json.fields.validation.CcpJsonCommonsFields;
-import com.ccp.decorators.CcpPropertiesDecorator;/**
+import com.ccp.decorators.CcpPropertiesDecorator;
+
+/**
  * {@code CcpInstantMessenger} implementation for Telegram. Sends text messages
  * (automatically split every 4096 characters) and files via multipart.
  * Handles HTTP errors 403 (bot blocked) and 429 (too many requests) by throwing the
  * matching exceptions.
  */
-
 class TelegramInstantMessenger implements CcpInstantMessenger {
+	/** Fields of the Telegram requests and of the results. */
 	enum JsonFieldNames implements CcpJsonFieldName{
-		chatId, recipient, message, method, reply_to_message_id, chat_id, url, urlInstantMessengerKey, fileName, caption
+		/** Unused. */
+		chatId,
+		/** Unused. */
+		recipient,
+		/** The text sent. */
+		message,
+		/** Unused. */
+		method,
+		/** Id of the message being answered. */
+		reply_to_message_id,
+		/** Id of the target chat. */
+		chat_id,
+		/** Unused. */
+		url,
+		/** Property holding the base URL of the bot API. */
+		urlInstantMessengerKey,
+		/** Name of the file sent. */
+		fileName,
+		/** Caption of the file sent. */
+		caption
 	}
 	
 //	public Long getMembersCount(CcpJsonRepresentation parameters) {
@@ -48,16 +69,35 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 //		return result;
 //	}
 
+	/**
+	 * Throws the error of a bot blocked by the user.
+	 * @param token the bot token
+	 * @return never returns
+	 */
 	CcpInstantMessenger throwThisBotWasBlockedByThisUser(String token) {
 		CcpErrorInstantMessageThisBotWasBlockedByThisUser ccpErrorInstantMessageThisBotWasBlockedByThisUser = new CcpErrorInstantMessageThisBotWasBlockedByThisUser(token);
 		throw ccpErrorInstantMessageThisBotWasBlockedByThisUser;
 	}
 	
+	/**
+	 * Throws the error of the rate limit.
+	 * @return never returns
+	 */
 	CcpInstantMessenger throwTooManyRequests() {
 		CcpHttpTooManyRequests ccpHttpTooManyRequests = new CcpHttpTooManyRequests();
 		throw ccpHttpTooManyRequests;
 	}
 	
+	/**
+	 * Sends the text as plain text, split in pieces of 4096 characters; each piece answers the previous one. A blank text
+	 * sends nothing. Errors: 403 bot blocked, 404 bot not found, 401 bot inactive, 429 rate limit.
+	 * @param botType the bot type, named in the blocked-bot error
+	 * @param botToken the bot token
+	 * @param chatId the target chat
+	 * @param replyTo the message being answered by the first piece
+	 * @param message the text
+	 * @return {@code replyTo} (the id of the last piece sent) and {@code message}; an empty JSON for a blank text
+	 */
 	public CcpJsonRepresentation sendTextMessage(CcpJsonFieldName botType, String botToken, Long chatId, Long replyTo, String message) {
 		String messageTrim = message.trim();
 		boolean messageTrimEmpty = messageTrim.isEmpty();
@@ -111,6 +151,18 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 				;
 	}
 
+	/**
+	 * Sends the file as a document with a caption.
+	 * @param botType the bot type, named in the blocked-bot error
+	 * @param botToken the bot token
+	 * @param chatId the target chat
+	 * @param replyTo not used
+	 * @param fileName the file name
+	 * @param caption the caption
+	 * @param fileContent the file content
+	 * @return {@code fileName}, {@code caption}, {@code message} (the content as text) and, when Telegram returned it,
+	 * {@code replyTo} with the id of the sent message
+	 */
 	public CcpJsonRepresentation sendFile(CcpJsonFieldName botType, String botToken, Long chatId, Long replyTo, String fileName, String caption, Byte[] fileContent) {
 
 		
@@ -145,6 +197,14 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		return sentFileResult;
 	}
 
+	/**
+	 * Builds the HTTP handler of a bot API method, with the URL read from {@code application_properties} and the error
+	 * statuses mapped to their exceptions.
+	 * @param botType the bot type
+	 * @param botToken the bot token
+	 * @param resource the API method path (e.g. "/sendMessage")
+	 * @return the handler
+	 */
 	private CcpHttpHandler getHttpHandler(CcpJsonFieldName botType, String botToken, String resource) {
 		CcpStringDecorator propertiesFileName = new CcpStringDecorator("application_properties");
 		CcpPropertiesDecorator propertiesDecorator = propertiesFileName.propertiesFrom();

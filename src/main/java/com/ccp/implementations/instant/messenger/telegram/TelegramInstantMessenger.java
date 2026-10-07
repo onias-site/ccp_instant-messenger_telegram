@@ -152,11 +152,11 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 	}
 
 	/**
-	 * Sends the file as a document with a caption.
+	 * Sends the file as a document with a caption, as an answer to {@code replyTo} when it is greater than zero.
 	 * @param botType the bot type, named in the blocked-bot error
 	 * @param botToken the bot token
 	 * @param chatId the target chat
-	 * @param replyTo not used
+	 * @param replyTo the message being answered; zero sends the file without answering any message
 	 * @param fileName the file name
 	 * @param caption the caption
 	 * @param fileContent the file content
@@ -173,8 +173,16 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		String chatIdAsText = "" + chatId;
 		CcpHttpBodyText text = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, "chat_id", chatIdAsText);
 		CcpHttpBodyText captionBodyText = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, "caption", caption);
-		List<CcpHttpBodyText> texts = Arrays.asList(text, captionBodyText);
-		
+		List<CcpHttpBodyText> texts = new ArrayList<>(Arrays.asList(text, captionBodyText));
+		boolean isAReply = replyTo > 0;
+
+		if(isAReply) {
+			String replyToAsText = "" + replyTo;
+			String replyToFieldName = JsonFieldNames.reply_to_message_id.name();
+			CcpHttpBodyText replyToBodyText = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, replyToFieldName, replyToAsText);
+			texts.add(replyToBodyText);
+		}
+
 		CcpHttpMethods method = CcpHttpMethods.POST;
 		CcpJsonRepresentation result = httpHandler.executeMultiPartHttpRequest("", method, CcpOtherConstants.EMPTY_JSON, texts, binaries, CcpHttpResponseType.singleRecord);
 		

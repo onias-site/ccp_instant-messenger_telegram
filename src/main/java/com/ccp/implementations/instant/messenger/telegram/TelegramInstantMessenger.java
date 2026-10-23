@@ -29,6 +29,11 @@ import com.ccp.decorators.CcpPropertiesDecorator;
  * matching exceptions.
  */
 class TelegramInstantMessenger implements CcpInstantMessenger {
+	/** The single instance: the class keeps no state. */
+	public final static TelegramInstantMessenger INSTANCE = new TelegramInstantMessenger();
+
+	private TelegramInstantMessenger() {}
+
 	/** Fields of the Telegram requests and of the results. */
 	enum JsonFieldNames implements CcpJsonFieldName{
 		/** Unused. */

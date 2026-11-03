@@ -48,6 +48,8 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		reply_to_message_id,
 		/** Id of the target chat. */
 		chat_id,
+		/** Id of the topic of the target group. */
+		message_thread_id,
 		/** Unused. */
 		url,
 		/** Property holding the base URL of the bot API. */
@@ -94,16 +96,31 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 	}
 	
 	/**
-	 * Sends the text as plain text, split in pieces of 4096 characters; each piece answers the previous one. A blank text
-	 * sends nothing. Errors: 403 bot blocked, 404 bot not found, 401 bot inactive, 429 rate limit.
+	 * Sends the text to the chat, without a topic.
 	 * @param botType the bot type, named in the blocked-bot error
 	 * @param botToken the bot token
 	 * @param chatId the target chat
 	 * @param replyTo the message being answered by the first piece
 	 * @param message the text
-	 * @return {@code replyTo} (the id of the last piece sent) and {@code message}; an empty JSON for a blank text
+	 * @return see {@link #sendTextMessage(CcpJsonFieldName, String, Long, Long, Long, String)}
 	 */
 	public CcpJsonRepresentation sendTextMessage(CcpJsonFieldName botType, String botToken, Long chatId, Long replyTo, String message) {
+		CcpJsonRepresentation result = this.sendTextMessage(botType, botToken, chatId, 0L, replyTo, message);
+		return result;
+	}
+
+	/**
+	 * Sends the text as plain text, split in pieces of 4096 characters; each piece answers the previous one. A blank text
+	 * sends nothing. Errors: 403 bot blocked, 404 bot not found, 401 bot inactive, 429 rate limit.
+	 * @param botType the bot type, named in the blocked-bot error
+	 * @param botToken the bot token
+	 * @param chatId the target chat
+	 * @param messageThreadId the topic of the group; zero sends without a topic
+	 * @param replyTo the message being answered by the first piece
+	 * @param message the text
+	 * @return {@code replyTo} (the id of the last piece sent) and {@code message}; an empty JSON for a blank text
+	 */
+	public CcpJsonRepresentation sendTextMessage(CcpJsonFieldName botType, String botToken, Long chatId, Long messageThreadId, Long replyTo, String message) {
 		String messageTrim = message.trim();
 		boolean messageTrimEmpty = messageTrim.isEmpty();
 
@@ -135,9 +152,11 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 					String chatIdAsText = "" + chatId;
 					CcpJsonRepresentation bodyWithChatId = bodyWithReplyTo
 					.put(JsonFieldNames.chat_id, chatIdAsText);
-					CcpJsonRepresentation body = bodyWithChatId
+					CcpJsonRepresentation bodyWithText = bodyWithChatId
 					.put(CcpJsonCommonsFields.text, text);
 			
+			boolean sentToATopic = messageThreadId > 0;
+			CcpJsonRepresentation body = sentToATopic ? bodyWithText.put(JsonFieldNames.message_thread_id, messageThreadId) : bodyWithText;
 			CcpJsonRepresentation response = httpHandler.executeHttpRequest("sendInstantMessage", CcpHttpMethods.POST, CcpOtherConstants.EMPTY_JSON, body, CcpHttpResponseType.singleRecord);
 			
 			CcpJsonRepresentation result = response.getInnerJson(CcpJsonCommonsFields.result);
@@ -157,7 +176,7 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 	}
 
 	/**
-	 * Sends the file as a document with a caption, as an answer to {@code replyTo} when it is greater than zero.
+	 * Sends the file to the chat, without a topic.
 	 * @param botType the bot type, named in the blocked-bot error
 	 * @param botToken the bot token
 	 * @param chatId the target chat
@@ -165,10 +184,27 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 	 * @param fileName the file name
 	 * @param caption the caption
 	 * @param fileContent the file content
+	 * @return see {@link #sendFile(CcpJsonFieldName, String, Long, Long, Long, String, String, Byte[])}
+	 */
+	public CcpJsonRepresentation sendFile(CcpJsonFieldName botType, String botToken, Long chatId, Long replyTo, String fileName, String caption, Byte[] fileContent) {
+		CcpJsonRepresentation result = this.sendFile(botType, botToken, chatId, 0L, replyTo, fileName, caption, fileContent);
+		return result;
+	}
+
+	/**
+	 * Sends the file as a document with a caption, as an answer to {@code replyTo} when it is greater than zero.
+	 * @param botType the bot type, named in the blocked-bot error
+	 * @param botToken the bot token
+	 * @param chatId the target chat
+	 * @param messageThreadId the topic of the group; zero sends without a topic
+	 * @param replyTo the message being answered; zero sends the file without answering any message
+	 * @param fileName the file name
+	 * @param caption the caption
+	 * @param fileContent the file content
 	 * @return {@code fileName}, {@code caption}, {@code message} (the content as text) and, when Telegram returned it,
 	 * {@code replyTo} with the id of the sent message
 	 */
-	public CcpJsonRepresentation sendFile(CcpJsonFieldName botType, String botToken, Long chatId, Long replyTo, String fileName, String caption, Byte[] fileContent) {
+	public CcpJsonRepresentation sendFile(CcpJsonFieldName botType, String botToken, Long chatId, Long messageThreadId, Long replyTo, String fileName, String caption, Byte[] fileContent) {
 
 		
 		CcpHttpHandler httpHandler = this.getHttpHandler(botType, botToken, "/sendDocument");
@@ -179,6 +215,15 @@ class TelegramInstantMessenger implements CcpInstantMessenger {
 		CcpHttpBodyText text = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, "chat_id", chatIdAsText);
 		CcpHttpBodyText captionBodyText = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, "caption", caption);
 		List<CcpHttpBodyText> texts = new ArrayList<>(Arrays.asList(text, captionBodyText));
+		boolean sentToATopic = messageThreadId > 0;
+
+		if(sentToATopic) {
+			String messageThreadIdAsText = "" + messageThreadId;
+			String messageThreadIdFieldName = JsonFieldNames.message_thread_id.name();
+			CcpHttpBodyText messageThreadIdBodyText = new CcpHttpBodyText(CcpHttpContentType.TEXT_PLAIN, messageThreadIdFieldName, messageThreadIdAsText);
+			texts.add(messageThreadIdBodyText);
+		}
+
 		boolean isAReply = replyTo > 0;
 
 		if(isAReply) {
